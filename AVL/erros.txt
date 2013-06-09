@@ -1,0 +1,15 @@
+cd_linha,dt_movto,nr_identificador,nr_latitude_grau,nr_longitude_grau,dt_avl
+
+
+Entrada de registros dos arquivos não esta em ordem cronológica (dt_movto não sequencial)
+
+Avls configurados com a data errada. Descartando dt_avl, varios avl possuem a data errada.
+Valores de latitude e longitudes errados. Descartando eventos com nr_latitude_grau,nr_longitude_grau fora da cidade de são paulo.
+
+Encontrado 15395 nr_identificador.
+Registros separados por nr_identificador.
+
+Verificado que cd_linha do registro não é confiável. As vezes o sentido da linha muda por um curto periodo de tempo e volta novamente ao anterior.
+
+
+

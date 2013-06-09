@@ -1,128 +1,26 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <math.h>
-#include <errno.h>
-
-#define MAX_SIZE_LINE 2000
+//gcc -lm -std=gnu99 -D_FILE_OFFSET_BITS=64  avl.c 
+#include "avl.h"
 
 
-
-
-
- 
-char* trim(char *str){
-		if(!str)
-			return NULL;
-		for(int i=0;i<strlen(str);i++)
-			if(str[i]=='\n' || str[i]=='\r'  || str[i]=='\t')
-				str[i]=' ';		
-}
-
-
-int getDstr(char *str,double *pret){
-	 errno = 0;
-	 *pret = strtold(str,NULL);
-	 return errno;
- }
-
-int getIstr(char *str,int *pret){
-	 errno = 0;
-	 *pret= strtol(str, NULL, 10);
-	 return errno;
- }
-
-
-/*
-CRIA DATA A PARTIR DO FORMATO A-M-D H:M:S.m
-*/ 
-int createTime_strtok(char* strdata,time_t *created_time){
-
-	if(!strdata)
-		return -1;
-	
-	char* amd_str = strtok(strdata, " ");
-	char* hms_str = strtok(NULL, " ");
-	
-	if(!amd_str || !hms_str)
-		return -2;
-	
-	
-	char* ano_str = strtok(amd_str, "-");
-	char* mes_str = strtok(NULL, "-");
-	char* dia_str = strtok(NULL, "-");
-	
-	if(!ano_str || !mes_str || !dia_str)
-		return -3;
-	
-	char* hora_str 	 = strtok(hms_str, ":");
-	char* minuto_str = strtok(NULL, ":");
-	char* segundo_str= strtok(NULL, ":");		
-
-	if(!hora_str || !minuto_str || !segundo_str)
-		return -4;
-	
-	int year,mon,day,hour,min,sec;
-	double dsec;
-	if(getIstr(ano_str,&year)!=0)
-		return -5;
-	if(getIstr(mes_str,&mon)!=0)
-		return -6;
-	if(getIstr(dia_str,&day)!=0)
-		return -7;
-	if(getIstr(hora_str,&hour)!=0)
-		return -8;
-	if(getIstr(minuto_str,&min)!=0)
-		return -9;
-	
-	if(getDstr(segundo_str,&dsec)!=0)
-		return -10;
-	sec = round(dsec);
-
-	struct tm mytime;
-
-	mytime.tm_year	= year - 1900 ;
-	mytime.tm_mon	= mon -1;		
-	mytime.tm_mday	= day;
-
-	mytime.tm_hour	= hour;
-	mytime.tm_min	= min;
-	mytime.tm_sec	= sec;
-
-
-	mytime.tm_wday=0;//IGNORADO
-	mytime.tm_yday=0;//IGNORADO
-	mytime.tm_isdst=-1;//SEM DST
-
-	*created_time = mktime(&mytime);
-	
-	if(*created_time == -1)
-		return -11;
-		
-	
-	return 0;
-	
-}
-
-time_t getCurrTime(){
-	time_t current_time;
-	current_time = time(NULL);
-	
-	if (current_time == ((time_t)-1)){
-       printf("ERRO Ao pegar curr time\n");
-       exit(1);
-    }
-	
-}
 
 time_t	mindate; 
 time_t	maxdate; 
-time_t	lastdate; 
+
 
 int main(){
 	printf("INICIO\n");
 	
+	int nbfiles = dirFiles("./bus");
+	if(nbfiles ==-1){
+		printf("Diretorio ./bus não existe\n");
+		exit(1);
+	}
+	if(nbfiles > 0){
+		printf("Diretorio ./bus não vazio nf = %d\n",nbfiles);
+		exit(1);
+	}
+
+
 	char txt[] = "2013-03-01 00:00:00";
 	int ret;
 	if((ret = createTime_strtok(txt,&mindate))){
@@ -130,9 +28,9 @@ int main(){
 		exit(1);
 	}
 	maxdate	= getCurrTime();
-	lastdate= mindate;
+
 	
-	FILE *fp= fopen("./avl15_21.txt","r");
+	FILE *fp= fopen("./avl15_21.txt","rb");
 	
 	if(!fp){
 		printf("ARQUIVO NULO\n");
@@ -145,49 +43,127 @@ int main(){
 
 	int count=0;
 	int counterr=0;
+
+	double minlat,maxlat,minlon,maxlon;
+	minlat = 99999.99;
+	minlon = 99999.99;
+	maxlat = -99999.99;
+	maxlon = -99999.99;
+
+	int minbid=999999999; 
+	int maxbid=-999999999;
+
+
+	time_t	initime=getCurrTime();
+	printf("INI:%s\n",ctime(&initime));
 	
-	while(fgets(line_read,MAX_SIZE_LINE,fp) && count < 100000){
+	while(fgets(line_read,MAX_SIZE_LINE,fp) ){
 	
-		char *lineid 	= strtok(line_read, ",");
-		char *data 		= strtok(NULL, ",");
-		char *busid 	= strtok(NULL, ",");
-		char *lat 		= strtok(NULL, ",");
-		char *lon 		= strtok(NULL, ",");
-		char *dataavl 	= strtok(NULL, ",");
+		char *lineid_str 	= strtok(line_read, ",");
+		char *data_str 		= strtok(NULL, ",");
+		char *busid_str 	= strtok(NULL, ",");
+		char *lat_str 		= strtok(NULL, ",");
+		char *lon_str 		= strtok(NULL, ",");
+		char *dataavl_str 	= strtok(NULL, ",");
 	
-		trim(dataavl);
-		trim(data);
+		trim(dataavl_str);
+		trim(data_str);
 
 
 		time_t	regdate;	
-		if(ret = createTime_strtok(data,&regdate)){
-			printf("ERRO createTime_strtok em %s  ret=%d\n",data,ret);
+		if(ret = createTime_strtok(data_str,&regdate)){
+			printf("ERRO createTime_strtok em %s  ret=%d\n",data_str,ret);
 			exit(1);
 		}
 
-		//printf("%s ",ctime(&regdate));printf("%s\n",ctime(&lastdate));
+		if( difftime(maxdate,regdate) < 0.0){
+			printf("ERRO data registro (max)  %s \n",data_str);
+			printf("regdata %s \n",ctime(&regdate));
+			printf("maxdata %s \n",ctime(&maxdate));
+			exit(1);
+		}
+
+		if( difftime(regdate,mindate) < 0.0){
+			printf("ERRO data registro (min)  %s \n",data_str);
+			printf("regdata %s \n",ctime(&regdate));
+			printf("mindate %s \n",ctime(&mindate));
+			exit(1);
+		}
+
+	
+		
+		int busid;
+		if(getIstr(busid_str,&busid)!=0){
+			printf("Erro conv busid_str %s  \n",busid_str);
+			exit(1);
+		}
+
+		int lineid;
+		if(getIstr(lineid_str,&lineid)!=0){
+			printf("Erro conv lineid_str %s  \n",lineid_str);
+			exit(1);
+		}
 
 
-		
-		
-		if( difftime(regdate,lastdate) < 0.0){
-			//ERRO SEQUENCIA DE DADOS
-			counterr++;
+		double lat;
+		if(getDstr(lat_str,&lat)!=0){
+			printf("Erro conv lat_str %s  \n",lat_str);
+			exit(1);
+		}
+
+		double lon;
+		if(getDstr(lon_str,&lon)!=0){
+			printf("Erro conv lat_str %s  \n",lon_str);
+			exit(1);
+		}
+
+		if(lat == 0.0 || lon ==0.0)
 			continue;
-		}
 		
-		lastdate = regdate;
+
+		if(lat > maxlat)
+			maxlat=lat;	
+		if(lon > maxlon)
+			maxlon=lon;
+		if(lat < minlat)
+			minlat=lat;	
+		if(lon < minlon)
+			minlon=lon;
+
+
+		//Limite a oeste, Embu das artes Cotia :-23.60552,-46.867676
+		//Limite a Leste Suzano : -23.532514,-46.344452
+		//Limite ao norte Franco da Rocha, Mairiporã : -23.320819,-46.658936
+		//Limite ao Sul Itanhaém : -24.022634,-46.715927
 		
+		//LAT é de Norte -> Sul
+		//LON é de Leste -> Oeste	
+
+		if(lat > -23.320819 || lat < -24.022634 || lon > -46.344452 || lon < -46.867676)
+			continue; // COORDENADAS FORA DA CIDADE DE SÃO PAULO
+
+
+
+		if( busid < minbid)
+			minbid=busid;
+		if( busid > maxbid); 
+			maxbid=busid;
+
+		appendToBusfile(busid,lineid,data_str,lat,lon);	
 		
-		/*
-		time_t	avldate;	
-		if(ret = createTime_strtok(dataavl,&avldate)){
-			printf("ERRO createTime_strtok avl em %s  ret=%d\n",dataavl,ret);
-			exit(1);
-		}*/
-		
+
+
+
 		count++;
 	}
+
+	time_t	fintime=getCurrTime();
+	printf("FIN:%s\n",ctime(&fintime));
+	printf("DIFF:%f\n", difftime(fintime,initime));
+	printf("lat %f %f\n",minlat,maxlat);
+	printf("lon %f %f\n",minlon,maxlon);
+
+	printf("minbid maxbid %d %d\n",minbid,maxbid);
 	
 	printf("%d %d\n",count,counterr);
 	
