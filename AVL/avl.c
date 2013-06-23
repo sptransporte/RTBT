@@ -10,15 +10,7 @@ time_t	maxdate;
 int main(){
 	printf("INICIO\n");
 	
-	int nbfiles = dirFiles("./bus");
-	if(nbfiles ==-1){
-		printf("Diretorio ./bus não existe\n");
-		exit(1);
-	}
-	if(nbfiles > 0){
-		printf("Diretorio ./bus não vazio nf = %d\n",nbfiles);
-		exit(1);
-	}
+	checkBusFileStructure();
 
 
 	char txt[] = "2013-03-01 00:00:00";
@@ -37,6 +29,13 @@ int main(){
 		exit(0);	
 	}
 	
+
+
+	fseeko(fp, 0L, SEEK_END);
+	long long int EndScale = ftello(fp);
+	fseeko(fp, 0L, SEEK_SET);
+	printf("SIZE %lld \n",EndScale);
+
 	char *line_read = malloc(MAX_SIZE_LINE*sizeof(char));
 	
 	fgets(line_read,MAX_SIZE_LINE,fp);//HEADER
@@ -54,10 +53,21 @@ int main(){
 	int maxbid=-999999999;
 
 
+	int LINE_SMASK = 0x00008000;
+	int minLS1=999999999;
+	int minLS2=999999999;
+	int maxLS1=0;
+	int maxLS2=0;
+
+
 	time_t	initime=getCurrTime();
 	printf("INI:%s\n",ctime(&initime));
 	
 	while(fgets(line_read,MAX_SIZE_LINE,fp) ){
+
+		
+		barraProgresso(ftello (fp),EndScale);
+
 	
 		char *lineid_str 	= strtok(line_read, ",");
 		char *data_str 		= strtok(NULL, ",");
@@ -117,6 +127,8 @@ int main(){
 			exit(1);
 		}
 
+
+
 		if(lat == 0.0 || lon ==0.0)
 			continue;
 		
@@ -131,17 +143,25 @@ int main(){
 			minlon=lon;
 
 
-		//Limite a oeste, Embu das artes Cotia :-23.60552,-46.867676
-		//Limite a Leste Suzano : -23.532514,-46.344452
-		//Limite ao norte Franco da Rocha, Mairiporã : -23.320819,-46.658936
-		//Limite ao Sul Itanhaém : -24.022634,-46.715927
-		
-		//LAT é de Norte -> Sul
-		//LON é de Leste -> Oeste	
-
+		/*
+		Utilizando os limites da cidade de são paulo
+		*/
 		if(lat > -23.320819 || lat < -24.022634 || lon > -46.344452 || lon < -46.867676)
 			continue; // COORDENADAS FORA DA CIDADE DE SÃO PAULO
 
+
+
+		if(lineid & LINE_SMASK){//SENTIDO 2
+				if(lineid >maxLS2)
+					maxLS2=lineid;
+				if(lineid <minLS2)
+					minLS2=lineid;					
+		}else{//SENTIDO 1
+				if(lineid >maxLS1)
+					maxLS1=lineid;
+				if(lineid <minLS1)
+					minLS1=lineid;	
+		}
 
 
 		if( busid < minbid)
@@ -149,6 +169,7 @@ int main(){
 		if( busid > maxbid); 
 			maxbid=busid;
 
+		//utilizar esta função juntamente com a verificação inicial de checkBusFileStructure()
 		appendToBusfile(busid,lineid,data_str,lat,lon);	
 		
 
@@ -165,6 +186,9 @@ int main(){
 
 	printf("minbid maxbid %d %d\n",minbid,maxbid);
 	
+	printf("minLS1 maxLS1 %d %d\n",minLS1,maxLS1);
+	printf("minLS2 maxLS2 %d %d\n",minLS2,maxLS2);
+
 	printf("%d %d\n",count,counterr);
 	
 	fclose(fp);

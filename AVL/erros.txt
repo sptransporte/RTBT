@@ -12,4 +12,5 @@ Registros separados por nr_identificador.
 Verificado que cd_linha do registro não é confiável. As vezes o sentido da linha muda por um curto periodo de tempo e volta novamente ao anterior.
 
 
-
+minLS1 maxLS1 1 5599
+minLS2 maxLS2 32769 36868

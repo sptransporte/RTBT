@@ -218,7 +218,6 @@ int main(){
 	char thefile[100];
 
 
-	int porc=-1;
 	int buscount=0;  
 	int nbus = dirFiles(strdir); 
 	if(nbus ==0){
@@ -244,13 +243,11 @@ int main(){
 
 		//printf("%s  %d	%s\n ", entry->d_name,entry->d_type,thefile);
 		//sortfile(thefile);
-		checkSeqData(thefile);
+		//checkSeqData(thefile);
 	
 		buscount++;
-		if( round(100.0*buscount/nbus) > porc){
-			porc=round(100.0*buscount/nbus);
-			fprintf(stderr, "\r|%d|",porc);
-		}
+		barraProgresso(buscount,nbus);
+
 		
 	}
 

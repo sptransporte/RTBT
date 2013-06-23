@@ -84,6 +84,34 @@ int dirFiles(char* mystrdir) {
 
 }
 
+//-->
+int BARRA_PROGRESSO_PORC=-1;
+void barraProgresso(long long int catual, long long int EndScale){
+
+	int porc = round(100.0*catual/EndScale);
+	if( porc > BARRA_PROGRESSO_PORC){
+		BARRA_PROGRESSO_PORC=porc;
+		fprintf(stderr, "\r|%d|",BARRA_PROGRESSO_PORC);
+	}
+
+
+	if(EndScale==-1)
+		 BARRA_PROGRESSO_PORC=-1;
+
+}
+//<--
+
+void checkBusFileStructure(){
+	int nbfiles = dirFiles("./bus");
+	if(nbfiles ==-1){
+		printf("Diretorio ./bus não existe\n");
+		exit(1);
+	}
+	if(nbfiles > 0){
+		printf("Diretorio ./bus não vazio nf = %d\n",nbfiles);
+		exit(1);
+	}
+}
 
 void appendToBusfile(int busid,int lineid,char* data_str,double lat,double lon){
 	char filename[100];
