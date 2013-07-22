@@ -138,6 +138,33 @@ double distminalinha(COORD* pp,COORD *vcoord,int size){
 }
 
 
+
+int distminalinha2(COORD* pp,COORD *vcoord,int size,double *pdistperc,double *pdistminal){
+	(*pdistminal)=100*RAIOTERRA;
+
+	double distPT=0.0;
+	(*pdistperc)=0.0;
+
+	int idx=0;
+
+	for(int i=1;i<size;i++){
+		METRIC metr = distmin(&vcoord[i-1],&vcoord[i],pp);
+
+		if(metr.distmin < (*pdistminal) ){
+			(*pdistminal) = metr.distmin;
+			(*pdistperc) = distPT + metr.froma;
+			idx=i-1;
+			}
+
+		distPT = distPT + (metr.froma - metr.fromb);
+	}
+
+	return idx;
+}
+
+
+
+
 void initMALHA(MALHA *pmalha){
 	pmalha->vptraj=0;
 	pmalha->size=0;	

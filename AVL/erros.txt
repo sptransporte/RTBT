@@ -14,3 +14,7 @@ Verificado que cd_linha do registro não é confiável. As vezes o sentido da li
 
 minLS1 maxLS1 1 5599
 minLS2 maxLS2 32769 36868
+
+Total de linhas 2651
+2214 437
+

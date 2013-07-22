@@ -83,7 +83,7 @@ int main(){
 
 	
 	
-
+/*
 	for(int i=0;i<pviagens->size;i++){
 		VIAGEM* pviagem=&(pviagens->viagens[i]);
 
@@ -99,6 +99,44 @@ int main(){
 		}
 
 	}
+*/
+
+	printf("Loading cdlinhav\n");
+	CDLINHAV* pcdlinhav = loadCDLINHAV("./gtfsdata/v_linha.txt",pshapes,ptrips); 
+
+
+
+	char *line_buffer=malloc(LINESTRMAXSIZE);
+	FILE* fp = fopen("./cd_linha_all.txt","r");
+
+	if(!fp){
+		printf(" Verify Base da dados nula XXX \n");
+		exit(1);	
+	}
+
+
+	//HEADER
+	fgets(line_buffer,LINESTRMAXSIZE,fp);
+	while(fgets(line_buffer,LINESTRMAXSIZE,fp)){	
+		int cd_linha=atoi(line_buffer);
+
+		char isL  = (cd_linha<0x8000);
+		int  ll   = (cd_linha)&(~0x8000);
+		
+		SHAPE* shapeL = NULL;
+		SHAPE* shapeH = NULL;
+		
+		shapeL = pcdlinhav->cdlinhav[ll].shapeL;		
+		shapeH = pcdlinhav->cdlinhav[ll].shapeH;	
+
+		//CASO SHAPE NULO TENTA PEGAR O DUAL
+		if(!shapeL && !shapeH)
+			printf("%d   ll=%d\n",cd_linha,ll);
+		
+
+	}
+	free(line_buffer);
+	fclose(fp);
 
 
 	printf("END\n");

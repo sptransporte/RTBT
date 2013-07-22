@@ -113,7 +113,120 @@ void checkBusFileStructure(){
 	}
 }
 
-void appendToBusfile(int busid,int lineid,char* data_str,double lat,double lon){
+///////////---->> ESCRITA E LEITURA DE DADOS BINARIOS DOS EVENTOS
+
+void writeAvlEventToFile(FILE *fp,int lineid,time_t data_evt,double lat,double lon){
+
+	int ret;
+
+	int lat_i =(int)(lat*10e6);
+	int lon_i =(int)(lon*10e6);
+
+	ret = fwrite(&lineid	, sizeof(int) 	,1,fp);if(ret==1)
+	ret = fwrite(&data_evt	, sizeof(time_t),1,fp);if(ret==1)
+	ret = fwrite(&lat_i	, sizeof(int) 	,1,fp);if(ret==1)
+	ret = fwrite(&lon_i 	, sizeof(int) 	,1,fp);
+
+	if(ret!=1){
+		printf("writeAvlEventToFile ERRO em fwrite ret= %d\n",ret);
+		exit(1);
+	}
+
+}
+
+int readAvlEventFromFile(FILE *fp,int *plineid,time_t *pdata_evt,double *plat,double *plon){
+
+	int lineid;
+	time_t data_evt;
+	int lat_i;
+	int lon_i;
+
+	int ret;
+
+
+	ret = fread(&lineid	, sizeof(int)	,1,fp); if(ret==1)
+	ret = fread(&data_evt	, sizeof(time_t),1,fp); if(ret==1)
+	ret = fread(&lat_i	, sizeof(int)	,1,fp); if(ret==1)	
+	ret = fread(&lon_i	, sizeof(int)	,1,fp);
+	
+	if(ret!=1){
+		if(feof(fp))
+			return 0;//EOF
+				
+		printf("readAvlEventToFile ERRO em fread %d\n",ret);
+		exit(1);		
+	}
+	
+	*plineid	=lineid;
+	*pdata_evt	=data_evt;
+	*plat		=(double)(lat_i/10.0e6);
+	*plon		=(double)(lon_i/10.0e6);
+
+	return 1;
+}
+
+///////////<<----
+
+/////////-->> BUS FILE DATA
+
+typedef struct {
+		
+	int lineid;
+	time_t enttime;
+	//double lat;
+	//double lon;
+	COORD p;       
+	
+
+} avlreg;
+
+typedef struct {
+	avlreg *array;
+	int size;
+} avlregArray;
+
+
+
+void loadBusFile(char* file ,avlregArray *pavlarray){
+
+	pavlarray->size=0;
+	pavlarray->array=NULL;
+
+	FILE *fp= fopen(file,"rb");
+	
+	if(!fp){
+		printf("ARQUIVO NULO %s\n",file);
+		exit(0);	
+	}
+
+	int ret;
+
+	avlreg ravlreg;
+
+	while(readAvlEventFromFile(fp,&(ravlreg.lineid),&(ravlreg.enttime),&(ravlreg.p.lat),&(ravlreg.p.lon))){
+
+		pavlarray->size++;
+		pavlarray->array = realloc(pavlarray->array,sizeof(avlreg)*(pavlarray->size));
+		
+		pavlarray->array[pavlarray->size -1].lineid  = ravlreg.lineid;
+		pavlarray->array[pavlarray->size -1].enttime = ravlreg.enttime;
+		pavlarray->array[pavlarray->size -1].p.lat   = ravlreg.p.lat;	
+		pavlarray->array[pavlarray->size -1].p.lon   = ravlreg.p.lon;
+
+	}	
+
+	if(pavlarray->size == 0){
+		printf("ARQUIVO VAZIO %s\n",file);
+		exit(0);
+	}
+
+	fclose(fp);
+
+}
+
+
+void appendToBusfile(int busid,int lineid,time_t data_evt,double lat,double lon){
+
 	char filename[100];
 	sprintf(filename,"./bus/%d",busid);
 
@@ -122,10 +235,13 @@ void appendToBusfile(int busid,int lineid,char* data_str,double lat,double lon){
 		printf("Error appendToBusfile abrindo %s\n",filename);
 		exit(1);
 	}
-	fprintf(fp,"%d,%s,%f,%f\n",lineid,data_str,lat,lon);
+
+	writeAvlEventToFile(fp,lineid,data_evt,lat,lon);
 	
 	fclose(fp);
 }
+
+/////////<<-- BUS FILE DATA
 
 
 

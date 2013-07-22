@@ -1,4 +1,6 @@
 //gcc -lm -std=gnu99 -D_FILE_OFFSET_BITS=64  avl.c 
+
+#include "sptrans.h"
 #include "avl.h"
 
 
@@ -170,7 +172,7 @@ int main(){
 			maxbid=busid;
 
 		//utilizar esta função juntamente com a verificação inicial de checkBusFileStructure()
-		appendToBusfile(busid,lineid,data_str,lat,lon);	
+		appendToBusfile(busid,lineid,regdate,lat,lon);	
 		
 
 

@@ -1,74 +1,34 @@
 //gcc -lm -std=gnu99 -D_FILE_OFFSET_BITS=64  bus.c 
 
-#include "avl.h"
 #include "sptrans.h"
+#include "avl.h"
 
-typedef struct {
-	char strline[MAX_SIZE_LINE];
-	time_t enttime;
-} avlreg;
 
-typedef struct {
-	avlreg *array;
-	int size;
-} avlregArray;
-
-void loadBusFile(char* file ,avlregArray *pavlarray){
-
-	pavlarray->size=0;
-	pavlarray->array=NULL;
-
-	FILE *fp= fopen(file,"rb");
-	
-	if(!fp){
-		printf("ARQUIVO NULO %s\n",file);
-		exit(0);	
-	}
-
-	char *line_read = malloc(MAX_SIZE_LINE*sizeof(char));
-	int ret;
-
-	while(fgets(line_read,MAX_SIZE_LINE,fp) ){
-
-		pavlarray->size++;
-		pavlarray->array = realloc(pavlarray->array,sizeof(avlreg)*(pavlarray->size));
-		strcpy(pavlarray->array[pavlarray->size -1].strline,line_read);
-		
-		char *lineid_str 	= strtok(line_read, ",");
-		char *data_str 		= strtok(NULL, ",");
-		char *lat_str 		= strtok(NULL, ",");
-		char *lon_str 		= strtok(NULL, ",");
-
-	
-		if(ret = createTime_strtok(data_str,&(pavlarray->array[pavlarray->size -1].enttime))){
-			printf("ERRO createTime_strtok em %s  ret=%d\n",data_str,ret);
-			exit(1);
-		}
-
-	}	
-
-	if(pavlarray->size == 0){
-		printf("ARQUIVO VAZIO %s\n",file);
-		exit(0);
-	}
-
-	free(line_read);
-	fclose(fp);
-
-}
 
 void swapAvlArrayIdx(avlregArray *pavlarray,int idx1,int idx2){
-	char strline[MAX_SIZE_LINE];
+
+	int lineid;
 	time_t enttime;
+	double lat;
+	double lon;
 
+	lineid=pavlarray->array[idx1].lineid;
 	enttime=pavlarray->array[idx1].enttime;
-	strcpy(strline,pavlarray->array[idx1].strline);
+	lat=pavlarray->array[idx1].p.lat;
+	lon=pavlarray->array[idx1].p.lon;
 
+
+	pavlarray->array[idx1].lineid=pavlarray->array[idx2].lineid;
 	pavlarray->array[idx1].enttime=pavlarray->array[idx2].enttime;
-	strcpy(pavlarray->array[idx1].strline,pavlarray->array[idx2].strline);
+	pavlarray->array[idx1].p.lat=pavlarray->array[idx2].p.lat;
+	pavlarray->array[idx1].p.lon=pavlarray->array[idx2].p.lon;
 
+
+	pavlarray->array[idx2].lineid=lineid;
 	pavlarray->array[idx2].enttime=enttime;
-	strcpy(pavlarray->array[idx2].strline,strline);
+	pavlarray->array[idx2].p.lat=lat;
+	pavlarray->array[idx2].p.lon=lon;
+
 
 }
 
@@ -129,11 +89,11 @@ void sortfile(char* file){
 	}
 
 	for(int i=0; i< avlarray.size ; i++)
-		fprintf(fp,"%s",avlarray.array[i].strline);
+		writeAvlEventToFile(fp,avlarray.array[i].lineid,avlarray.array[i].enttime,avlarray.array[i].p.lat,avlarray.array[i].p.lon);
 
 	fclose(fp);
 	avlarray.size=0;
-	free(avlarray.array);
+	free(avlarray.array);//FREE
 }
 
 
@@ -145,7 +105,7 @@ void checkSeqData(char* file){
 		printf("checkSeqData ARQUIVO NULO %s\n",file);
 		exit(0);	
 	}
-	char *line_read = malloc(MAX_SIZE_LINE*sizeof(char));
+	avlreg ravlreg;
 	int ret;
 
 	time_t tant=-1;
@@ -153,33 +113,11 @@ void checkSeqData(char* file){
 
 	COORD cor,corant;
 
-	while(fgets(line_read,MAX_SIZE_LINE,fp) ){
+	while(readAvlEventFromFile(fp,&(ravlreg.lineid),&(ravlreg.enttime),&(ravlreg.p.lat),&(ravlreg.p.lon))){
 
-		char *lineid_str 	= strtok(line_read, ",");
-		char *data_str 		= strtok(NULL, ",");
-		char *lat_str 		= strtok(NULL, ",");
-		char *lon_str 		= strtok(NULL, ",");
-
-		
-	
-		if(ret = createTime_strtok(data_str,&tago)){
-			printf("ERRO createTime_strtok em %s  ret=%d\n",data_str,ret);
-			exit(1);
-		}
-
-
-
-		if(ret = getDstr(lat_str,&cor.lat)){
-			printf("Erro conv lat_str %s  %d\n",lat_str,ret);
-			exit(1);
-		}
-
-		trim(lon_str);
-		
-		if(ret = getDstr(lon_str,&cor.lon)){
-			printf("Erro conv lon_str %s  %d\n",lon_str,ret);
-			exit(1);
-		}
+		tago =  ravlreg.enttime;
+		cor.lat=ravlreg.p.lat;
+		cor.lon=ravlreg.p.lon;
 
 
 		if(tant!=-1){
@@ -194,7 +132,7 @@ void checkSeqData(char* file){
 			}
 
 			double dtm = dist(&corant,&cor);
-			printf("%f  %f\n",dtm/dts,3.6*dtm/dts);
+			//printf("%f  %f\n",dtm/dts,3.6*dtm/dts);
 
 		}
 
@@ -204,7 +142,6 @@ void checkSeqData(char* file){
 
 	}
 
-	free(line_read);
 	fclose(fp);
 }
 
@@ -242,8 +179,8 @@ int main(){
 		sprintf(thefile,"%s/%s",strdir,entry->d_name);
 
 		//printf("%s  %d	%s\n ", entry->d_name,entry->d_type,thefile);
-		//sortfile(thefile);
-		//checkSeqData(thefile);
+		sortfile(thefile);
+		checkSeqData(thefile);
 	
 		buscount++;
 		barraProgresso(buscount,nbus);

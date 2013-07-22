@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "sptrans.h"
 
@@ -110,6 +111,145 @@ typedef struct {
 	int size; //SHAPES
 
 } VIAGENS;
+
+
+////////////////////////////////////////////////////////
+
+
+void mcpystr(char **strdst,char *strtocp){
+
+	if(!strtocp){
+		*strdst=NULL;	
+		return;
+	}
+
+	int size = strlen(strtocp);
+	if(!(*strdst) && size>0){
+		*strdst = malloc(size +1);
+		strcpy(*strdst, strtocp);	
+		 
+	}
+}
+
+/*XXX XXX XXX XXX AVL XXX XXX XXX XXX */
+
+typedef struct {
+	SHAPE* shapeL;
+	SHAPE* shapeH;
+
+	char *routeid;
+	
+	char* tripidL;
+	char* tripidH;
+	char *headsignL;
+	char *headsignH;
+
+
+} CDLINHA;
+
+
+/*
+O cd_linha caixa baixa é o indice do vetor
+*/
+typedef struct {
+	CDLINHA* cdlinhav;
+	int size;	
+} CDLINHAV;
+
+
+char *trimwhitespace(char *str)
+{
+  char *end;
+  while(isspace(*str)) str++;
+  if(*str == 0)
+    return str;
+  end = str + strlen(str) - 1;
+  while(end > str && isspace(*end)) end--;
+  *(end+1) = 0;
+  return str;
+}
+
+
+/*XXX XXX XXX XXX AVL XXX XXX XXX XXX */
+
+
+
+CDLINHAV* loadCDLINHAV(char *file,SHAPES *pshapes,TRIPS *ptrips){
+	
+	char *line_buffer=malloc(LINESTRMAXSIZE);
+
+	CDLINHAV *pcdlinhav=malloc(sizeof(CDLINHAV));
+	pcdlinhav->size		=0x8000;
+	pcdlinhav->cdlinhav	=malloc(sizeof(CDLINHA)*(pcdlinhav->size));
+	memset(pcdlinhav->cdlinhav, 0x00, sizeof(CDLINHA)*(pcdlinhav->size));	
+
+	FILE* fp = fopen(file,"r");
+
+	if(!fp){
+		printf("CDLINHA Verify Base da dados nula - %s\n",file);
+		exit(1);	
+	}
+
+	//HEADER
+	fgets(line_buffer,LINESTRMAXSIZE,fp);
+	while(fgets(line_buffer,LINESTRMAXSIZE,fp)){
+		if(strlen(line_buffer) >= (LINESTRMAXSIZE -1)){
+				printf("STRING MAIOR QUE BUFFER %d  MAX SIZE= %d\n",strlen(line_buffer),LINESTRMAXSIZE);
+				exit(1);
+		}
+
+		char *cdlinha_str 	= strtok(line_buffer, "\t");
+		char *tripid_str 	= strtok(NULL, "\t");
+		char *headsig_str 	= strtok(NULL, "\t");
+
+		int cdlinha = atoi(cdlinha_str);
+		
+		char isL  = (cdlinha<0x8000);
+		int  ll   = (cdlinha)&(~0x8000); 
+
+
+		for(int i=0; i < ptrips->size; i++)
+			for(int j=0; j < ptrips->tripids[i].size; j++)			
+				if(!strcmp(trimwhitespace(ptrips->tripids[i].mytrips[j].tripid),tripid_str)){
+					
+					unsigned long  shapeid = ptrips->tripids[i].mytrips[j].shapeid;
+			
+					for(int k=0;k<pshapes->size;k++)
+						if(pshapes->shapes[k].shapeid == shapeid){
+							
+							//ptrips->tripids[i].mytrips[j].tripid;
+							//ptrips->tripids[i].mytrips[j].headsign;
+							//ptrips->tripids[i].routeid;
+							mcpystr(&(pcdlinhav->cdlinhav[ll].routeid),ptrips->tripids[i].routeid);
+						
+							if(isL){
+								pcdlinhav->cdlinhav[ll].shapeL = &(pshapes->shapes[k]);
+								mcpystr(&(pcdlinhav->cdlinhav[ll].tripidL),ptrips->tripids[i].mytrips[j].tripid);
+								mcpystr(&(pcdlinhav->cdlinhav[ll].headsignL),ptrips->tripids[i].mytrips[j].headsign);
+							}
+							else{ 
+								pcdlinhav->cdlinhav[ll].shapeH = &(pshapes->shapes[k]);
+								mcpystr(&(pcdlinhav->cdlinhav[ll].tripidH),ptrips->tripids[i].mytrips[j].tripid);
+								mcpystr(&(pcdlinhav->cdlinhav[ll].headsignH),ptrips->tripids[i].mytrips[j].headsign);
+
+							}
+							break;
+						}	
+									
+						
+					break;
+					
+				}
+
+			
+	}	
+
+	free(line_buffer);
+	fclose(fp);
+	return pcdlinhav;
+
+}
+
 
 
 VIAGENS* loadVIAGENS(STOPS *pstops,STOPTIMES *pstoptimes,SHAPES *pshapes,TRIPS *ptrips){
