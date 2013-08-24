@@ -88,13 +88,25 @@ int main(){
 		VIAGEM* pviagem=&(pviagens->viagens[i]);
 
 		for(int i=0;i<pviagem->sizestops;i++){
+
 			double x =  distminalinha(&(pviagem->coordstops[i]),pviagem->shape,pviagem->sizeshape);
-			if(x > 10.0){
-				printf("routeid \t %s \t tripid \t %s \t %s \t %lf\n",pviagem->routeid,pviagem->tripid,pviagem->headsign,x);
+			//if(x > 10.0){
+
+				//searching for stop id
+				unsigned long  stopid = 0;
+				for(int j=0;j<pstops->size;j++)
+					if(pstops->stops[j].coord.lat == pviagem->coordstops[i].lat &&  pstops->stops[j].coord.lon == pviagem->coordstops[i].lon ){
+						stopid=pstops->stops[j].stopid;
+						break;
+					}
+
+				//printf("routeid \t %s \t tripid \t %s \t %s \t %lf\n",pviagem->routeid,pviagem->tripid,pviagem->headsign,x);
+
+				printf("%u\t%lf\n",stopid,x);
 
 				//criaHTMLTeste(pviagem->shape, pviagem->sizeshape,pviagem->coordstops, pviagem->sizestops);
 				//exit(1);
-			}
+			//}
 
 		}
 
